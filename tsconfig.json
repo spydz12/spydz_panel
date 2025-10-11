@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",                 // 👈 هام جدًا
+    "moduleResolution": "node",        // 👈 أضفه
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,           // 👈 أضفه
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
