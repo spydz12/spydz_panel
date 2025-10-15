@@ -37,19 +37,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       expiresAt: new Date(endDate),
     });
 
-    // 2️⃣ Chercher l’utilisateur dans pending_users
-    const pendingSnap = await db
-      .collection('pending_users')
-      .where('email', '==', normalizedEmail)
-      .get();
+    // 2️⃣ Chercher l’utilisateur dans pending_users (insensible à la casse)
+    const pendingSnap = await db.collection('pending_users').get();
+    const pendingDoc = pendingSnap.docs.find(
+      (doc) =>
+        (doc.data().email || '').toLowerCase().trim() === normalizedEmail
+    );
 
-    if (pendingSnap.empty) {
-      return res.status(404).json({ message: 'Utilisateur introuvable dans pending_users' });
-    }
-
-    const pendingDoc = pendingSnap.docs[0];
     if (!pendingDoc) {
-      return res.status(404).json({ message: 'Aucun document trouvé dans pending_users' });
+      return res
+        .status(404)
+        .json({ message: 'Utilisateur introuvable dans pending_users' });
     }
 
     const userData = pendingDoc.data();
@@ -82,6 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (err: any) {
     console.error('generate-code error:', err);
-    return res.status(500).json({ message: err.message || 'Erreur serveur' });
+    return res
+      .status(500)
+      .json({ message: err.message || 'Erreur serveur' });
   }
 }
