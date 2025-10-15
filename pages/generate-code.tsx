@@ -1,121 +1,47 @@
-import React, { useState } from 'react';
+// pages/api/generate-code.ts
+import * as admin from 'firebase-admin';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { v4 as uuidv4 } from 'uuid';
 
-export default function GenerateCodePage() {
-  const [email, setEmail] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [status, setStatus] = useState('');
-  const [loading, setLoading] = useState(false);
+// ✅ نهيئ Firebase Admin مرة واحدة فقط
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID!,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 
-  const handleGenerate = async () => {
-    if (!email || !startDate || !endDate) {
-      setStatus('⛔ يرجى ملء جميع الحقول');
-      return;
-    }
+const db = admin.firestore();
+const Timestamp = admin.firestore.Timestamp;
 
-    setLoading(true);
-    setStatus('⏳ جاري إنشاء الكود...');
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
 
-    try {
-      const res = await fetch('/api/generate-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, startDate, endDate }),
-      });
+  const { email, startDate, endDate } = req.body;
 
-      const data = await res.json();
+  if (!email || !startDate || !endDate) {
+    return res.status(400).json({ success: false, message: '⛔ يرجى ملء جميع الحقول' });
+  }
 
-      if (data.success) {
-        setStatus(`✅ الكود تم إنشاؤه: ${data.code}`);
-      } else {
-        setStatus(`❌ ${data.message || 'حدث خطأ أثناء إنشاء الكود'}`);
-      }
-    } catch (error) {
-      console.error(error);
-      setStatus('⚠️ خطأ في الاتصال بالسيرفر');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const code = uuidv4().slice(0, 8);
 
-  return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: 'sans-serif',
-        maxWidth: 400,
-        margin: '50px auto',
-        border: '1px solid #ddd',
-        borderRadius: 10,
-        backgroundColor: '#fafafa',
-      }}
-    >
-      <h2 style={{ textAlign: 'center', color: '#2e7d32' }}>🎯 توليد كود التفعيل</h2>
+  try {
+    await db.collection('activation_codes').add({
+      email: email.trim().toLowerCase(),
+      code,
+      createdAt: Timestamp.now(),
+      startsAt: new Date(startDate),
+      expiresAt: new Date(endDate),
+    });
 
-      <label>البريد الإلكتروني:</label>
-      <input
-        type="email"
-        placeholder="example@email.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: 10,
-          marginBottom: 10,
-          borderRadius: 6,
-          border: '1px solid #ccc',
-        }}
-      />
-
-      <label>تاريخ البداية:</label>
-      <input
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: 10,
-          marginBottom: 10,
-          borderRadius: 6,
-          border: '1px solid #ccc',
-        }}
-      />
-
-      <label>تاريخ النهاية:</label>
-      <input
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: 10,
-          marginBottom: 20,
-          borderRadius: 6,
-          border: '1px solid #ccc',
-        }}
-      />
-
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        style={{
-          width: '100%',
-          backgroundColor: '#2e7d32',
-          color: '#fff',
-          padding: 12,
-          border: 'none',
-          borderRadius: 8,
-          cursor: 'pointer',
-          fontSize: 16,
-        }}
-      >
-        {loading ? 'جارٍ التوليد...' : '🔐 توليد الكود'}
-      </button>
-
-      <p style={{ marginTop: 20, textAlign: 'center', color: '#333' }}>{status}</p>
-    </div>
-  );
+    return res.status(200).json({ success: true, code });
+  } catch (error) {
+    console.error('🔥 Firebase Admin Error:', error);
+    return res.status(500).json({ success: false, message: '❌ خطأ أثناء إنشاء الكود' });
+  }
 }
