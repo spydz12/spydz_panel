@@ -1,11 +1,12 @@
+// pages/api/generate-code.ts
+import * as admin from 'firebase-admin';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
+// ✅ نهيئ Firebase Admin مرة واحدة فقط
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID!,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
       privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
@@ -13,7 +14,8 @@ if (!getApps().length) {
   });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
+const Timestamp = admin.firestore.Timestamp;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -39,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ success: true, code });
   } catch (error) {
-    console.error(error);
+    console.error('🔥 Firebase Admin Error:', error);
     return res.status(500).json({ success: false, message: '❌ خطأ أثناء إنشاء الكود' });
   }
 }
