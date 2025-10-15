@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import admin from 'firebase-admin';
 
-// init Admin SDK once
+// 🔹 initialize Firebase Admin SDK once
 if (!admin.apps.length) {
   const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
   admin.initializeApp({ credential: admin.credential.cert(sa) });
@@ -9,23 +9,27 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export default async function handler(
-  _req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    // 🟢 fetch all pending users
     const snap = await db.collection('pending_users').get();
-    const users = snap.docs.map((d) => {
-      const data = d.data() as any;
+
+    if (snap.empty) {
+      return res.status(200).json({ users: [] });
+    }
+
+    // 🧩 extract email + fullName
+    const users = snap.docs.map((doc) => {
+      const data = doc.data();
       return {
-        id: d.id,
-        email: (data.email || data.email1 || '').toString(),
-        fullName: (data.fullName || data.fullname || '').toString(),
+        email: (data.email || '').toString(),
+        fullName: (data.fullName || '').toString(),
       };
     });
+
     return res.status(200).json({ users });
   } catch (err: any) {
     console.error('get-pending-users error:', err);
-    return res.status(500).json({ message: err.message || 'server error' });
+    return res.status(500).json({ message: err.message || 'Erreur serveur' });
   }
 }
