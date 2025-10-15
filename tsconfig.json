@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",                 // 👈 هام جدًا
-    "moduleResolution": "node",        // 👈 أضفه
+    "module": "esnext",                 
+    "moduleResolution": "node",       
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "esModuleInterop": true,           // 👈 أضفه
+    "esModuleInterop": true,          
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
