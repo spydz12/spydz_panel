@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
 
-// ✅ نهيئ Firebase Admin مرة واحدة فقط
+// ✅ Firebase Admin init
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
